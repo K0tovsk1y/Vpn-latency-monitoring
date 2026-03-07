@@ -23,7 +23,7 @@ For detailed guides, please refer to:
 
 ```bash
 # Clone the repository
-git clone https://github.com/K0tovskiy/VPN-servers-monitor
+git clone https://github.com/K0tovskiy/VPN-servers-bench
 cd VPN-servers-monitor
 
 # Install optional dependencies for graphing
