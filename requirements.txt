@@ -1,0 +1,4 @@
+# Core dependencies: only standard library is required!
+# Optional dependencies for `graph` command:
+numpy==1.26.4
+matplotlib==3.8.3
