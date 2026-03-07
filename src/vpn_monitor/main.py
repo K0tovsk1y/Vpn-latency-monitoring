@@ -15,7 +15,7 @@ Examples:
   %(prog)s test --tasks "xray-ping,tcp-ping,speed"
   %(prog)s monitor --tasks "xray-ping:60s,tcp-ping:120s,speed:30m"
   %(prog)s stats --hours 12 --sort score
-  %(prog)s graph "Italy" --plots "latency:percentile-log,speed:dynamic"
+  %(prog)s graph "Italy" --plots "xray-ping:percentile-log,speed:dynamic"
         """)
     sub = p.add_subparsers(dest='cmd')
 

@@ -77,3 +77,45 @@ Deletes old historical records to keep the database size manageable.
 Dumps raw measurement data joined with server metadata.
 - **Format**: CSV.
 - **Output**: remark, protocol, transport, host, port, timestamp, method, latency_ms, error.
+
+---
+
+## 🛠️ Advanced Flag Syntax
+
+Many flags in the VPN Monitor use a **Colon Separated Syntax** (`domain:metric` or `metric:style`) to provide deep control over what is tested, displayed, or plotted.
+
+### 1. `stats` and `export` Flags (`--cols`, `--sort`)
+Format: `[provider:]metric`
+
+| Provider (Optional) | Metric | Description |
+| :--- | :--- | :--- |
+| `xray-ping` | `mean`, `jit`, `score` | Average, Jitter, or Stability Score. |
+| `tcp-ping` | `p50`, `p90`, `p95` | Latency percentiles. |
+| (none) | `OK%`, `N`, `σ` | Success rate, Sample count, or StdDev. |
+
+- **Examples**: 
+    - `--cols "Server,xray-ping:p95,speed"` (Shows Server name, Xray P95, and Speed).
+    - `--sort "xray-ping:jit"` (Sorts the table by Xray jitter).
+
+### 2. `monitor` Flags (`--tasks`)
+Format: `metric:interval`
+
+| Metric | Frequency Suffix | Example |
+| :--- | :--- | :--- |
+| `xray-ping` | `s` (seconds) | `xray-ping:10s` |
+| `tcp-ping` | `m` (minutes) | `tcp-ping:5m` |
+| `speed` | `h` (hours) | `speed:1h` |
+
+- **Example**: `monitor --tasks "xray-ping:15s,speed:30m"`
+
+### 3. `graph` Flags (`--plots`)
+Format: `metric:style`
+
+| Metric | Plot Style | Visual Output |
+| :--- | :--- | :--- |
+| `xray-ping` | `percentile` | Linear growth curve with P-markers. |
+| `tcp-ping` | `percentile-log` | Log-scale curve (best for latency). |
+| `xray-jitter` | `dynamic` | Chronological bar chart of values. |
+| `speed` | | |
+
+- **Example**: `graph "MyNode" --plots "xray-ping:percentile-log,speed:dynamic"`

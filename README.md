@@ -23,8 +23,8 @@ For detailed guides, please refer to:
 
 ```bash
 # Clone the repository
-git clone https://github.com/.../vpn-monitor.git
-cd vpn-monitor
+git clone https://github.com/K0tovskiy/VPN-servers-monitor
+cd VPN-servers-monitor
 
 # Install optional dependencies for graphing
 pip install -r requirements.txt
