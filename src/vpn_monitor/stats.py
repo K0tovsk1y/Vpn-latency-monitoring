@@ -19,9 +19,9 @@ def _pct(data, p):
     f = int(k); c = min(f+1, len(data)-1)
     return data[f] + (k-f)*(data[c]-data[f])
 
-def stability_score_1(mean_ms, jitter_ms, loss_pct, p95_ms, speed_mbps=None):
-    if mean_ms is None: return 0.0
-    lat_f = math.exp(-mean_ms / 300.0)
+def stability_score_1(p50_ms, jitter_ms, loss_pct, p95_ms, speed_mbps=None):
+    if p50_ms is None: return 0.0
+    lat_f = math.exp(-p50_ms / 300.0)
     jit_f = math.exp(-jitter_ms / 100.0)
     loss_f = math.exp(-loss_pct / 20.0)
     tail_f = math.exp(-p95_ms / 600.0)
@@ -45,14 +45,14 @@ def stability_score_2(mean_ms, jitter_ms, loss_pct, p95_ms, speed_mbps=None):
     penalty = (0.30 * lat_p + 0.20 * jit_p + 0.20 * loss_p + 0.15 * tail_p + 0.15 * spd_p)
     return round(max(0, (1 - penalty) * 100), 1)
 
-def stability_score_3(mean_ms, jitter_ms, loss_pct, p95_ms, speed_mbps=None):
-    if mean_ms is None: return 0.0
-    lat_p = mean_ms / (mean_ms + 150.0)
-    jit_p = jitter_ms / (jitter_ms + 50.0)
-    loss_p = loss_pct / (loss_pct + 10.0)
-    tail_p = p95_ms / (p95_ms + 400.0)
+def stability_score_3(p50_ms, jitter_ms, loss_pct, p95_ms, speed_mbps=None):
+    if p50_ms is None: return 0.0
+    lat_p = 1.0 - math.exp(-p50_ms / 300.0)
+    jit_p = 1.0 - math.exp(-jitter_ms / 100.0)
+    loss_p = 1.0 - math.exp(-loss_pct / 50.0)
+    tail_p = 1.0 - math.exp(-p95_ms / 600.0)
     if speed_mbps is not None and speed_mbps > 0:
-        spd_p = 10.0 / (speed_mbps + 10.0)
+        spd_p = math.exp(-speed_mbps / 10.0)
     else:
         spd_p = 1.0
     penalty = (0.30 * lat_p + 0.20 * jit_p + 0.20 * loss_p + 0.15 * tail_p + 0.15 * spd_p)
@@ -84,9 +84,18 @@ def gather_server_stats(conn, server_id, since, until=None, pcts=None):
     xray_rows = [r[1] for r in pings if r[0] == 'xray']
     
     avg_speed = None
+    speed_dict = {'mean': None}
+    
     if speed_rows:
         speeds = [r[0] for r in speed_rows]
+        speeds_sorted = sorted(speeds)
         avg_speed = round(sum(speeds) / len(speeds), 2)
+        speed_dict['mean'] = avg_speed
+        for p in pcts:
+            speed_dict[f'p{p}'] = round(_pct(speeds_sorted, p), 2)
+    else:
+        for p in pcts:
+            speed_dict[f'p{p}'] = None
 
     def _calc(lats):
         total = len(lats)
@@ -121,13 +130,14 @@ def gather_server_stats(conn, server_id, since, until=None, pcts=None):
             
         # Hardcode p95 extraction for score if missing from dynamic list
         p95_val = res.get('p95', _pct(sorted_lats, 95))
-        res['score1'] = stability_score_1(mean, res['jit_mean'], loss, p95_val, avg_speed)
+        p50_val = res.get('p50', _pct(sorted_lats, 50))
+        res['score1'] = stability_score_1(p50_val, res['jit_mean'], loss, p95_val, avg_speed)
         res['score2'] = stability_score_2(mean, res['jit_mean'], loss, p95_val, avg_speed)
-        res['score3'] = stability_score_3(mean, res['jit_mean'], loss, p95_val, avg_speed)
+        res['score3'] = stability_score_3(p50_val, res['jit_mean'], loss, p95_val, avg_speed)
         return res
 
     return {
         'tcp': _calc(tcp_rows),
         'xray': _calc(xray_rows),
-        'speed': {'mean': avg_speed}
+        'speed': speed_dict
     }

@@ -406,11 +406,14 @@ def cmd_stats(args):
             proto = ""
             type_str = ""
             metric_str = c.split(':')[-1].capitalize() if ':' in c else c.capitalize()
-        elif c == 'speed' or 'speed' in c.lower():
+        elif c.startswith('speed') or 'speed' in c.lower():
             w = 7
             proto = ""
-            type_str = ""
-            metric_str = "Speed"
+            if ':' in c:
+                type_str = "Speed"
+            else:
+                type_str = ""
+                metric_str = "Speed"
 
         widths[c] = w
         if c == 'Server':
@@ -461,7 +464,12 @@ def cmd_stats(args):
                 if key.startswith('jit_p') and key[5:].isdigit():
                     mapped[f'{p}-jit:p{key[5:]}'] = val
         
-        mapped['speed'] = st['speed']['mean']
+        mapped['speed:mean'] = st['speed']['mean']
+        mapped['speed'] = st['speed']['mean'] # Fallback
+        for key, val in st['speed'].items():
+            if key.startswith('p') and key[1:].isdigit():
+                mapped[f'speed:{key}'] = val
+        
         if mapped.get('xray-ping:score2') is not None:
              mapped['score1'] = mapped['xray-ping:score1']
              mapped['score2'] = mapped['xray-ping:score2']
@@ -481,11 +489,11 @@ def cmd_stats(args):
     def get_val(it, key):
         v = it.get(key)
         if v is None:
-            is_desc = key in ('speed', 'score') or 'score' in key or 'OK%' in key or key == 'N'
+            is_desc = 'speed' in key or 'score' in key or 'OK%' in key or key == 'N'
             return float('-inf') if is_desc else float('inf')
         return v
 
-    is_desc = args.sort in ('speed', 'score') or 'score' in args.sort or 'OK%' in args.sort or args.sort == 'N'
+    is_desc = 'speed' in args.sort or 'score' in args.sort or 'OK%' in args.sort or args.sort == 'N'
     items.sort(key=lambda x: get_val(x, args.sort), reverse=is_desc)
 
     import re
@@ -527,7 +535,7 @@ def cmd_stats(args):
                 line += pad(f"{val:4d}", w) + " "
             elif c.startswith('score') or 'score' in c:
                 line += pad(f"{C.score(val)}{val:5.1f}{C.RST}", w) + " "
-            elif c == 'speed' or c.endswith('speed:mean'):
+            elif c.startswith('speed') or 'speed' in c:
                 line += pad(f"{C.spd(val)}{val:5.1f}M{C.RST}", w) + " "
             elif c.endswith(':mean'):
                 line += pad(f"{C.lat(val)}{val:6.1f}{C.RST}ms", w) + " "

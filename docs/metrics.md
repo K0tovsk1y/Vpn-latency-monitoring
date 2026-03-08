@@ -31,13 +31,14 @@ The **Stability Score** is a weighted algorithm designed to penalize instability
 
 We offer 3 different scoring formulas, all of which are strictly monotonic and continuous. By default, **`Score2`** is used for `--sort score`:
 - **`score1` (Multiplicative Exponential):** 
-  `Score = 100 * (lat_f^0.3) * (jit_f^0.2) * ...`
+  `Score = 100 * (lat_f^0.30) * (jit_f^0.20) * (loss_f^0.20) * (tail_f^0.15) * (spd_f^0.15)`
   *Extremely aggressive. A single bad metric zeroes out the total score.*
 - **`score2` (Additive Exponential) [DEFAULT]:**
-  `Score = MAX(0, 100 * (1 - (0.3*lat_p + 0.2*jit_p + ...))`
-  Uses normalized exponentially decaying penalty values like `1 - exp(-latency/300)`. It converges smoothly and strictly to 0. 
+  `Score = MAX(0, 100 * (1 - (0.30*lat_p + 0.20*jit_p + 0.20*loss_p + 0.15*tail_p + 0.15*spd_p)))`
+  Uses normalized exponentially decaying penalty values like `lat_p = 1 - exp(-latency/300)`. It computes a weighted sum of penalties, ensuring it converges smoothly and strictly to 0 without capping abruptly. 
 - **`score3` (Fractional):**
-  Uses rational fractions like `x / (x + N)`. It penalizes slower, creating longer "tails" where bad and very bad servers can still be differentiated slightly.
+  `Score = MAX(0, 100 * (1 - (0.30*lat_p + 0.20*jit_p + 0.20*loss_p + 0.15*tail_p + 0.15*spd_p)))`
+  Uses rational fractions for penalties like `lat_p = mean / (mean + 150)`. It penalizes slower, creating longer "tails" where bad and very bad servers can still be differentiated slightly.
 
 > [!TIP]
 > This new exponential/fractional curve applies a stricter penalty at the median ranges, but never abruptly "caps out". Any small improvement will mathematically improve the score.
